@@ -1,6 +1,6 @@
 import base64
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Dict, Generator, List
 
@@ -10,13 +10,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 
 
-@dataclass
+@dataclass(frozen=True)
 class EmailMessage:
     id: str
     thread_id: str
     subject: str
-    body: str
-    attachment: bytes
+    body: str = field(repr=False)
+    attachment: bytes = field(repr=False)
     sender: str
     receiver: str
 
