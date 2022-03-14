@@ -1,6 +1,8 @@
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
+from functools import cached_property
 from io import BytesIO
 
 from pdfminer.high_level import extract_text
@@ -8,6 +10,7 @@ from pdfminer.high_level import extract_text
 
 class InvoicePattern:
     _DATE_REGEX = r"[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}"
+    CLIENT_NAME = r"SELF BILL INVOICE\n\n([A-Za-z ]+)"
     GROSS_VALUE = r"Gross.(\d{0,3}[,]?\d{0,6}.\d{2})"
     HOUR_RATE = r"STD..(\d+.\d{2})..SELF BILL INVOICE Number"
     HOURS_WORKED = r".(\d{0,2}:\d{2}).hrs"
@@ -25,6 +28,7 @@ class Invoice:
     raw_pdf: bytes = field(
         repr=False,
     )
+    client_name: str
     gross_value: str
     hour_rate: str
     hours_worked: str
@@ -36,6 +40,7 @@ class Invoice:
     vat_rate: str
     vat_value: str
     REGEX_MAPPING = dict(
+        client_name=InvoicePattern.CLIENT_NAME,
         gross_value=InvoicePattern.GROSS_VALUE,
         hour_rate=InvoicePattern.HOUR_RATE,
         hours_worked=InvoicePattern.HOURS_WORKED,
@@ -47,6 +52,42 @@ class Invoice:
         vat_rate=InvoicePattern.VAT_RATE,
         vat_value=InvoicePattern.VAT_VALUE,
     )
+
+    def __post_init__(self) -> None:
+        attributes_to_format = (
+            ("hours_worked", str(float(self.hours_worked.replace(":", ".")))),
+            ("vat_rate", str(int(float(self.vat_rate)))),
+            (
+                "invoice_date",
+                datetime.strptime(
+                    self.invoice_date, os.environ["PDF_INVOICE_DATE_FORMAT"]
+                ).strftime("%d-%m-%Y"),
+            ),
+            (
+                "payment_due_date",
+                datetime.strptime(
+                    self.payment_due_date,
+                    os.environ["BOOKKEPPING_DATE_FORMAT"],
+                ).strftime("%d-%m-%Y"),
+            ),
+        )
+
+        for attr, value in attributes_to_format:
+            super().__setattr__(attr, value)
+
+    @cached_property
+    def internal_note(self) -> str:
+        return (
+            str(self)
+            .replace("Invoice(", "")
+            .replace(",", "\n")
+            .replace("'", "")
+            .replace(")", "")
+            .replace(" ", "")
+            .replace("_", " ")
+            .replace("=", " = ")
+            .title()
+        )
 
     def save(self) -> None:
         """Save to filesystem"""
