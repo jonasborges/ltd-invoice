@@ -1,0 +1,74 @@
+version: '3.1'
+
+services:
+  redis:
+    container_name: redis
+    hostname: redis
+    restart: always
+    image: redis:6.0-alpine3.14
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--save", '"900 1 300 10"']
+    networks:
+      backend:
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    image: celery-beat
+    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, beat, --loglevel=INFO, -E]
+    restart: always
+    depends_on:
+      - redis
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: bind
+        source: .empty
+        target: /app/.venv
+    networks:
+      backend:
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    image: celery-worker
+    restart: always
+    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, worker, --loglevel=INFO, -E, --concurrency=2]
+    depends_on:
+      - redis
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: bind
+        source: .empty
+        target: /app/.venv
+    networks:
+      backend:
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    image: celery-flower
+    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, flower, --loglevel=INFO]
+    restart: always
+    ports:
+      - "5555:5555"
+    depends_on:
+      - beat
+    networks:
+      backend:
+
+
+networks:
+  backend:
+
+volumes:
+  redis-data:
