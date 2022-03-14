@@ -30,3 +30,4 @@ repos:
     rev: v0.940
     hooks:
     - id: mypy
+      args: ["--exclude", "^tests_\\.py$"]

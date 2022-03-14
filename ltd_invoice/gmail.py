@@ -2,7 +2,7 @@ import base64
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Dict, Generator, List
+from typing import Any, Dict, Generator, List
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -25,7 +25,7 @@ class GmailService:
     def __init__(self) -> None:
         self.service = self.build()
 
-    def get_raw_messages(self) -> Generator[Dict, None, None]:
+    def get_raw_messages(self) -> Generator[Dict[str, Any], None, None]:
         message_response = (
             self.service.users()
             .messages()
@@ -57,7 +57,7 @@ class GmailService:
 
             yield raw_message
 
-    def get_attachment(self, attachment_id, message_id) -> bytes:
+    def get_attachment(self, attachment_id: str, message_id: str) -> bytes:
         raw_attachment = (
             self.service.users()
             .messages()
@@ -95,7 +95,9 @@ class GmailService:
         )
 
     @staticmethod
-    def get_attribute_from_header(attribute: str, message: Dict) -> str:
+    def get_attribute_from_header(
+        attribute: str, message: Dict[str, Any]
+    ) -> str:
         attr = attribute.lower()
         for header in message["payload"]["headers"]:
             if header["name"].lower() == attr:
@@ -103,7 +105,7 @@ class GmailService:
         raise ValueError(f"{attribute} is not present")
 
     @staticmethod
-    def get_attachment_id(message: Dict) -> str:
+    def get_attachment_id(message: Dict[str, Any]) -> str:
         for part in message["payload"]["parts"]:
             if part["mimeType"] == "application/pdf":
                 return str(part["body"]["attachmentId"])
