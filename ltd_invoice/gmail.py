@@ -78,7 +78,7 @@ class GmailService:
                 id=raw_message["id"],
                 thread_id=raw_message["threadId"],
                 attachment=self.get_attachment(
-                    attachment_id=self.get_attachement_id(raw_message),
+                    attachment_id=self.get_attachment_id(raw_message),
                     message_id=raw_message["id"],
                 ),
                 subject=self.get_attribute_from_header(
@@ -103,8 +103,11 @@ class GmailService:
         raise ValueError(f"{attribute} is not present")
 
     @staticmethod
-    def get_attachement_id(message: Dict) -> str:
-        return str(message["payload"]["parts"][1]["body"]["attachmentId"])
+    def get_attachment_id(message: Dict) -> str:
+        for part in message["payload"]["parts"]:
+            if part["mimeType"] == "application/pdf":
+                return str(part["body"]["attachmentId"])
+        raise ValueError("Message has no pdf attached")
 
     @classmethod
     @lru_cache(maxsize=1)
