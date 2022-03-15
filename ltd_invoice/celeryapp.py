@@ -13,8 +13,8 @@ app.autodiscover_tasks(
 
 app.conf.beat_schedule = {
     "process_invoices": {
-        "task": "process_invoices",
-        "schedule": crontab(hour=18, day_of_week="tue"),
+        "task": "ltd_invoice.tasks.process_invoices",
+        "schedule": crontab(hour="18", day_of_week="tue"),
         "options": {"expires": 10 * 60},  # 10 minutes
     },
 }

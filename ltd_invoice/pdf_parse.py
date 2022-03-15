@@ -61,14 +61,14 @@ class Invoice:
                 "invoice_date",
                 datetime.strptime(
                     self.invoice_date, os.environ["PDF_INVOICE_DATE_FORMAT"]
-                ).strftime("%d-%m-%Y"),
+                ).strftime(os.environ["BOOKKEPPING_DATE_FORMAT"]),
             ),
             (
                 "payment_due_date",
                 datetime.strptime(
                     self.payment_due_date,
-                    os.environ["BOOKKEPPING_DATE_FORMAT"],
-                ).strftime("%d-%m-%Y"),
+                    os.environ["PDF_INVOICE_DATE_FORMAT"],
+                ).strftime(os.environ["BOOKKEPPING_DATE_FORMAT"]),
             ),
         )
 

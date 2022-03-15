@@ -1,8 +1,10 @@
+import logging
 import os
 import urllib.parse
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import Select
 
 from ltd_invoice.pdf_parse import Invoice
@@ -10,13 +12,30 @@ from ltd_invoice.pdf_parse import Invoice
 
 class Bookkeper:
     def __init__(self) -> None:
+        logging.info("Creating Bookkeper")
         self._is_logged = False
-        self.driver = webdriver.Remote(
-            command_executor=os.environ["SELENIUM_HUB"],
-            desired_capabilities=DesiredCapabilities.FIREFOX,
-        )
+        self.driver = self.get_webdriver()
+        logging.info("Selenium window size %s", self.driver.get_window_size())
+        self.driver.maximize_window()
         self.base_url = os.environ["BOOKKEPPING_PLATFORM_URL"]
         self.driver.get(self.base_url)
+        logging.info("Bookkeper created!")
+
+    @staticmethod
+    def get_webdriver() -> WebDriver:
+        selenium_webdriver = os.environ["SELENIUM_WEBDRIVER"]
+
+        if selenium_webdriver == "hub":
+            return webdriver.Remote(
+                command_executor=os.environ["SELENIUM_HUB"],
+                desired_capabilities=DesiredCapabilities.FIREFOX,
+            )
+        elif selenium_webdriver == "local":
+            return webdriver.Firefox()
+        else:
+            raise ValueError(
+                f"Invalid SELENIUM_WEBDRIVER envvar: {selenium_webdriver}"
+            )
 
     def login(self) -> None:
         user = os.environ["BOOKKEPPING_PLATFORM_USER"]
@@ -91,6 +110,7 @@ class Bookkeper:
 
     def confirm_submit_popup(self) -> None:
         self.driver.find_element_by_id("1").click()
+        self.driver.find_element_by_class_name("swal2-confirm").click()
 
     def submit_invoice(self) -> None:
         self.driver.find_element_by_id("btnSaveInvoice").click()

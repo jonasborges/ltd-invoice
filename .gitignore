@@ -132,3 +132,7 @@ dmypy.json
 # Google api
 credentials.json
 token.json
+
+# app
+.processed_emails
+.tracker
