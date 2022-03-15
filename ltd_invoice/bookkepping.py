@@ -2,6 +2,7 @@ import os
 import urllib.parse
 
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import Select
 
 from ltd_invoice.pdf_parse import Invoice
@@ -10,7 +11,10 @@ from ltd_invoice.pdf_parse import Invoice
 class Bookkeper:
     def __init__(self) -> None:
         self._is_logged = False
-        self.driver = webdriver.Firefox()
+        self.driver = webdriver.Remote(
+            command_executor=os.environ["SELENIUM_HUB"],
+            desired_capabilities=DesiredCapabilities.FIREFOX,
+        )
         self.base_url = os.environ["BOOKKEPPING_PLATFORM_URL"]
         self.driver.get(self.base_url)
 
