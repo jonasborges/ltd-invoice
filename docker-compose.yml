@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: Dockerfile.celery
     image: celery-beat
-    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, beat, --loglevel=INFO, -E]
+    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, beat]
     restart: always
     depends_on:
       - redis
@@ -53,16 +53,13 @@ services:
       backend:
 
   flower:
-    build:
-      context: .
-      dockerfile: Dockerfile.celery
-    image: celery-flower
-    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, flower, --loglevel=INFO]
+    image: mher/flower:0.9.7
+    command: [celery, flower, "--broker=${CELERY_BROKER}"]
     restart: always
     ports:
       - "5555:5555"
     depends_on:
-      - beat
+      - redis
     networks:
       backend:
 
