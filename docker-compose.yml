@@ -10,7 +10,12 @@ services:
       - redis-data:/data
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes", "--save", '"900 1 300 10"']
+    command: redis-server --appendonly yes --save "900 1 300 10"
+    healthcheck:
+      test: redis-cli ping
+      interval: 30s
+      timeout: 10s
+      retries: 10
     networks:
       backend:
 
@@ -19,10 +24,11 @@ services:
       context: .
       dockerfile: Dockerfile.celery
     image: celery-beat
-    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, beat]
+    command: poetry run celery -A ltd_invoice.celeryapp beat
     restart: always
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes:
       - type: bind
         source: .
@@ -30,6 +36,11 @@ services:
       - type: bind
         source: .empty
         target: /app/.venv
+    healthcheck:
+        test: poetry run celery -A ltd_invoice.celeryapp inspect ping
+        interval: 30s
+        timeout: 10s
+        retries: 10
     networks:
       backend:
 
@@ -39,9 +50,12 @@ services:
       dockerfile: Dockerfile.celery
     image: celery-worker
     restart: always
-    command: [poetry, run, celery, -A, ltd_invoice.celeryapp, worker, --loglevel=INFO, -E, --concurrency=1]
+    command: poetry run celery -A ltd_invoice.celeryapp worker --loglevel=INFO -E --concurrency=1
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      firefox:
+        condition: service_healthy
     volumes:
       - type: bind
         source: .
@@ -49,17 +63,33 @@ services:
       - type: bind
         source: .empty
         target: /app/.venv
+    healthcheck:
+        test: poetry run celery -A ltd_invoice.celeryapp inspect ping
+        interval: 30s
+        timeout: 10s
+        retries: 10
     networks:
       backend:
 
   flower:
     image: mher/flower:0.9.7
-    command: [celery, flower, "--broker=${CELERY_BROKER}"]
     restart: always
     ports:
       - "5555:5555"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      beat:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER}
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5555/api/workers || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
     networks:
       backend:
 
@@ -73,6 +103,11 @@ services:
       GRID_MAX_SESSION: 16
       GRID_BROWSER_TIMEOUT: 3000
       GRID_TIMEOUT: 3000
+    healthcheck:
+      test: curl --fail ${SELENIUM_HUB}/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
     networks:
       backend:
 
@@ -81,7 +116,8 @@ services:
     container_name: web-firefox
     restart: always
     depends_on:
-      - selenium_hub
+      selenium_hub:
+        condition: service_healthy
     environment:
       HUB_PORT_4444_TCP_ADDR: selenium_hub
       HUB_PORT_4444_TCP_PORT: 4444
@@ -89,6 +125,11 @@ services:
       NODE_MAX_INSTANCES: 2
     ports:
       - "5901:5900"
+    healthcheck:
+      test: curl --fail http://localhost:5555 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
     networks:
       backend:
 
