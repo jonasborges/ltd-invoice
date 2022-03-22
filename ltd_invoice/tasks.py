@@ -27,7 +27,6 @@ def process_invoices() -> None:
                 )
                 continue
             invoice = extract_invoice(email_message.attachment)
-            # breakpoint()
             bookkeper.register_invoice(invoice)
             tracker.update(email_message)
             logging.info(

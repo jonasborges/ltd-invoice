@@ -79,14 +79,7 @@ class GmailService:
             .execute()
         )
 
-        try:
-            messages = message_response["messages"]
-        except KeyError:
-            print("FAILED!")
-
-        logging.info("Found new messages")
-
-        for msg in messages:
+        for msg in message_response.get("messages", []):
             raw_message = (
                 self.service.users()
                 .messages()
@@ -204,6 +197,7 @@ class GmailService:
         except RefreshError:
             os.unlink("token.json")
             creds = cls.generate_creds(scopes)
+        return creds
 
     @classmethod
     def generate_creds(cls, scopes):
