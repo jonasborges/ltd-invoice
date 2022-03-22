@@ -6,6 +6,7 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, Generator, Union
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -172,6 +173,11 @@ class GmailService:
     @classmethod
     @lru_cache(maxsize=1)
     def build(cls) -> Resource:
+        # Call the Gmail API
+        return build("gmail", "v1", credentials=cls.get_credentials())
+
+    @classmethod
+    def get_credentials(cls):
         # If modifying these scopes, delete the file token.json.
         scopes = [os.environ["GOOGLE_API_SCOPE"]]
 
@@ -181,18 +187,32 @@ class GmailService:
         # time.
         if os.path.exists("token.json"):
             creds = Credentials.from_authorized_user_file("token.json", scopes)
+
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                creds = cls.refresh_creds(creds, scopes)
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    "credentials.json", scopes
-                )
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open("token.json", "w") as token:
-                token.write(creds.to_json())
+                creds = cls.generate_creds(scopes)
 
-        # Call the Gmail API
-        return build("gmail", "v1", credentials=creds)
+        return creds
+
+    @classmethod
+    def refresh_creds(cls, creds, scopes):
+        try:
+            creds.refresh(Request())
+        except RefreshError:
+            os.unlink("token.json")
+            creds = cls.generate_creds(scopes)
+
+    @classmethod
+    def generate_creds(cls, scopes):
+        flow = InstalledAppFlow.from_client_secrets_file(
+            "credentials.json", scopes
+        )
+        creds = flow.run_local_server(port=0)
+
+        # Save the credentials for the next run
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+        return creds

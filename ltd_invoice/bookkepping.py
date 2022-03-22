@@ -21,6 +21,13 @@ class Bookkeper:
         self.driver.get(self.base_url)
         logging.info("Bookkeper created!")
 
+    def __del__(self):
+        try:
+            self.driver.close()
+        except AttributeError:
+            # can't close a driver that's not there
+            pass
+
     @staticmethod
     def get_webdriver() -> WebDriver:
         selenium_webdriver = os.environ["SELENIUM_WEBDRIVER"]
@@ -109,10 +116,17 @@ class Bookkeper:
         self.driver.find_element_by_id("CUSTOMER_NOTE").send_keys(text)
 
     def confirm_submit_popup(self) -> None:
+        self.driver.execute_script("window.scrollTo(0, 0);")
+
         self.driver.find_element_by_id("1").click()
+
         self.driver.find_element_by_class_name("swal2-confirm").click()
 
     def submit_invoice(self) -> None:
+
+        self.driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);"
+        )
         self.driver.find_element_by_id("btnSaveInvoice").click()
         self.confirm_submit_popup()
 
