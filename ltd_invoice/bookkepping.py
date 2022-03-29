@@ -4,6 +4,7 @@ import urllib.parse
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import Select
 
@@ -116,18 +117,29 @@ class Bookkeper:
         self.driver.find_element_by_id("CUSTOMER_NOTE").send_keys(text)
 
     def confirm_submit_popup(self) -> None:
-        self.driver.execute_script("window.scrollTo(0, 0);")
-
-        self.driver.find_element_by_id("1").click()
-
-        self.driver.find_element_by_class_name("swal2-confirm").click()
+        self.driver.execute_script(
+            "arguments[0].click();", self.driver.find_element_by_id("1")
+        )
+        self.driver.execute_script(
+            "arguments[0].click();",
+            self.driver.find_element_by_class_name("swal2-confirm"),
+        )
 
     def submit_invoice(self) -> None:
+        self.driver.execute("SET_CONTEXT", {"context": "chrome"})
+        win = self.driver.find_element_by_tag_name("body")
+        for _ in range(4):
+            win.send_keys(Keys.CONTROL, "-")
 
         self.driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);"
         )
-        self.driver.find_element_by_id("btnSaveInvoice").click()
+        self.driver.execute("SET_CONTEXT", {"context": "content"})
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            self.driver.find_element_by_id("btnSaveInvoice"),
+        )
         self.confirm_submit_popup()
 
     def register_invoice(self, invoice: Invoice) -> None:

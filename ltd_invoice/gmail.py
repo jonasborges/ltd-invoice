@@ -6,6 +6,8 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, Generator, Union
 
+import dateutil.parser
+import dateutil.tz
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -24,13 +26,20 @@ class EmailMessage:
     receiver: str
     date: datetime
 
+    @staticmethod
+    def parse_date(value):
+        if "BST" in value:
+            BST = dateutil.tz.gettz("Europe/London")
+            return dateutil.parser.parse(value, tzinfos={"BST": BST})
+        else:
+            return datetime.strptime(value, os.environ["EMAIL_DATE_FORMAT"])
+
     def __post_init__(self) -> None:
         attributes_to_format = (
             (
                 "date",
-                datetime.strptime(
+                self.parse_date(
                     self.date,
-                    os.environ["EMAIL_DATE_FORMAT"],
                 ),
             ),
         )

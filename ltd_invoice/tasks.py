@@ -26,6 +26,7 @@ def process_invoices() -> None:
                     email_message.date,
                 )
                 continue
+
             invoice = extract_invoice(email_message.attachment)
             bookkeper.register_invoice(invoice)
             tracker.update(email_message)
@@ -35,5 +36,6 @@ def process_invoices() -> None:
                 invoice.invoice_date,
                 invoice.timesheet_id,
             )
+            invoice.save()
     finally:
         del bookkeper
