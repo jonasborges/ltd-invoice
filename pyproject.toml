@@ -13,7 +13,7 @@ google-auth-oauthlib = "^0.5.2"
 "pdfminer.six" = "^20211012"
 selenium = "^4.2.0"
 python-dotenv = "^0.20.0"
-redis = "^4.3.3"
+redis = "^4.6.0"
 celery = "^5.2.7"
 python-dateutil = "^2.8.2"
 
