@@ -23,7 +23,7 @@ isort = "^5.10.1"
 pre-commit = "^2.19.0"
 flake8 = "^4.0.1"
 pytest-cov = "^3.0.0"
-mypy = "^0.960"
+mypy = "^1.4"
 types-selenium = "^3.141.9"
 docker-compose = "^1.29.2"
 
